@@ -42,14 +42,21 @@ class FormattedText:
     def __init__(self, code: List[str], text: str) -> None:
         self.code = code
         self.text = text
+        self.string = self._make_str(code, text)
 
-    def __str__(self) -> str:
-        code = ";".join(self.code)
-        text = self.text
+    @staticmethod
+    def _make_str(code, text) -> str:
+        code = ";".join(code)
         return f"\033[{code}m{text}\033[{CLR}m"
 
+    def __str__(self) -> str:
+        return self.string
+
     def __repr__(self) -> str:
-        return self.__str__()
+        return self.string
+
+    def __eq__(self, o: "FormattedText") -> bool:
+        return self.string == o.string
 
 
 def fmt(
