@@ -55,8 +55,8 @@ class FormattedText:
     def __repr__(self) -> str:
         return self.string
 
-    def __eq__(self, o: "FormattedText") -> bool:
-        return self.string == o.string
+    def __eq__(self, o: object) -> bool:
+        return self.string == o.string  # type: ignore
 
 
 def fmt(
