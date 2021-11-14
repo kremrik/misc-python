@@ -1,4 +1,4 @@
-# Formats
+# formats
 Simple, composable, std-lib string colors and styles
 
 ### Examples
