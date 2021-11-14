@@ -7,7 +7,7 @@ GREEN := \e[32m
 #----------------------------------------------------------
 
 .PHONY: check
-check : black-format flake8-lint success
+check : black-format flake8-lint type-check success
 
 .PHONY: unit-tests
 unit-tests :
@@ -21,28 +21,28 @@ type-check :
 	@echo
 	@echo -e '$(BLUE)type-check'
 	@echo -e 		'----------$(NO_COLOR)'
-	@mypy formats
+	@mypy formats simple_cli
 
 .PHONY: black-format
 black-format :
 	@echo
 	@echo -e '$(BLUE)black-format'
 	@echo -e 		'------------$(NO_COLOR)'
-	@black formats -l $(LINE_LENGTH)
+	@black formats simple_cli -l $(LINE_LENGTH)
 
 .PHONY: black-check
 black-check :
 	@echo
 	@echo -e '$(BLUE)black-format'
 	@echo -e 		'------------$(NO_COLOR)'
-	@black formats -l $(LINE_LENGTH) --check
+	@black formats simple_cli -l $(LINE_LENGTH) --check
 
 .PHONY: flake8-lint
 flake8-lint :
 	@echo
 	@echo -e '$(BLUE)flake8-lint'
 	@echo -e 		'-----------$(NO_COLOR)'
-	@flake8 formats \
+	@flake8 formats simple_cli \
 		--max-line-length $(LINE_LENGTH) \
 		--ignore=E501,E731,F401 \
 		--count \
