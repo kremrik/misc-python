@@ -6,8 +6,12 @@ Simple, composable, std-lib string colors and styles
 from formats import Colors, Styles
 
 txt = Styles.bold(Colors.red("BOLD RED TEXT"))
+
 type(txt)
 # formats.formats.FormattedText
+
+txt.string
+# '\x1b[31;1mBOLD RED TEXT\x1b[0m'
 ```
 
 ### Notes
@@ -16,3 +20,6 @@ _not_ a Python `str`, but an instance of `FormattedText`.
 This was done for two reasons:
 1. it implements `__repr__` and `__str__`, thereby appearing exactly as you'd expect in the REPL
 2. it allows for composability without having to split strings, resort to regex, etc
+
+As noted above, if you wish to use the plain 'ol string
+from the object, just use the `.string` property.
