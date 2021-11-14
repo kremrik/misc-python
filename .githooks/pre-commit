@@ -1,0 +1,3 @@
+#!/bin/bash
+
+make black-check flake8-lint || exit 1

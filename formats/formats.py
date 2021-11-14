@@ -52,7 +52,9 @@ class FormattedText:
         return self.__str__()
 
 
-def fmt(f, txt: Union[str, FormattedText]):
+def fmt(
+    f, txt: Union[str, FormattedText]
+) -> FormattedText:
     if isinstance(txt, str):
         return FormattedText([f], txt)
 
