@@ -33,7 +33,7 @@ class Colors(Enum):
 
 
 class Styles(Enum):
-    bold = lambda txt:fmt(BOLD, txt)
+    bold = lambda txt: fmt(BOLD, txt)
     underline = lambda txt: fmt(UNDERLINE, txt)
     reverse_video = lambda txt: fmt(REVERSE_VIDEO, txt)
 
@@ -55,7 +55,7 @@ class FormattedText:
 def fmt(f, txt: Union[str, FormattedText]):
     if isinstance(txt, str):
         return FormattedText([f], txt)
-    
+
     text = txt.text
     code = txt.code
     code.append(f)
