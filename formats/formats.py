@@ -46,7 +46,7 @@ class FormattedText:
     def __str__(self) -> str:
         code = ";".join(self.code)
         text = self.text
-        return f"\033[{code}m{text}\033[{CLR}"
+        return f"\033[{code}m{text}\033[{CLR}m"
 
     def __repr__(self) -> str:
         return self.__str__()
