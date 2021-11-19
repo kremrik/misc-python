@@ -14,12 +14,6 @@ class TestColors(unittest.TestCase):
 
 
 class TestStyles(unittest.TestCase):
-    STYLES = {
-        "bold": "1",
-        "underline": "4",
-        "reverse_video": "7",
-    }
-
     def test_all_styles(self):
         for style, code in STYLES.items():
             with self.subTest(msg=style):
