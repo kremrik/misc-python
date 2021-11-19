@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Union
 
 
 __all__ = ["Colors", "Styles"]
@@ -20,52 +19,44 @@ REVERSE_VIDEO = "7"
 
 CLR = "0"
 
+FMT_CHARS = "\033["
+
 
 class Colors(Enum):
-    black = lambda txt: fmt(BLACK, txt)
-    red = lambda txt: fmt(RED, txt)
-    green = lambda txt: fmt(GREEN, txt)
-    brown = lambda txt: fmt(BROWN, txt)
-    blue = lambda txt: fmt(BLUE, txt)
-    purple = lambda txt: fmt(PURPLE, txt)
-    cyan = lambda txt: fmt(CYAN, txt)
-    light_gray = lambda txt: fmt(LIGHT_GRAY, txt)
+    black = lambda txt: apply(BLACK, txt)
+    red = lambda txt: apply(RED, txt)
+    green = lambda txt: apply(GREEN, txt)
+    brown = lambda txt: apply(BROWN, txt)
+    blue = lambda txt: apply(BLUE, txt)
+    purple = lambda txt: apply(PURPLE, txt)
+    cyan = lambda txt: apply(CYAN, txt)
+    light_gray = lambda txt: apply(LIGHT_GRAY, txt)
 
 
 class Styles(Enum):
-    bold = lambda txt: fmt(BOLD, txt)
-    underline = lambda txt: fmt(UNDERLINE, txt)
-    reverse_video = lambda txt: fmt(REVERSE_VIDEO, txt)
+    bold = lambda txt: apply(BOLD, txt)
+    underline = lambda txt: apply(UNDERLINE, txt)
+    reverse_video = lambda txt: apply(REVERSE_VIDEO, txt)
 
 
-class FormattedText:
-    def __init__(self, code: List[str], text: str) -> None:
-        self.code = code
-        self.text = text
-        self.string = self._make_str(code, text)
+def apply(f: str, txt: str) -> str:
+    if _is_formatted(txt):
+        return _add_format(f, txt)
 
-    @staticmethod
-    def _make_str(code, text) -> str:
-        code = ";".join(code)
-        return f"\033[{code}m{text}\033[{CLR}m"
-
-    def __str__(self) -> str:
-        return self.string
-
-    def __repr__(self) -> str:
-        return self.string
-
-    def __eq__(self, o: object) -> bool:
-        return self.string == o.string  # type: ignore
+    bgn = _fmt(f)
+    end = _fmt(CLR)
+    return f"{bgn}{txt}{end}"
 
 
-def fmt(
-    f, txt: Union[str, FormattedText]
-) -> FormattedText:
-    if isinstance(txt, str):
-        return FormattedText([f], txt)
+def _is_formatted(txt: str) -> bool:
+    return FMT_CHARS in txt
 
-    text = txt.text
-    code = txt.code
-    code.append(f)
-    return FormattedText(code, text)
+
+def _fmt(f: str) -> str:
+    return f"{FMT_CHARS}{f}m"
+
+
+def _add_format(f: str, txt: str) -> str:
+    parts = txt.split(FMT_CHARS)
+    parts[1] = f"{f};{parts[1]}"
+    return FMT_CHARS.join(parts)

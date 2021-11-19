@@ -14,7 +14,7 @@ unit-tests :
 	@echo
 	@echo -e '$(BLUE)unit-tests'
 	@echo -e        '----------$(NO_COLOR)'
-	@python3 -m unittest tests/test*.py -v
+	@python3 -m unittest discover -v
 
 .PHONY: type-check
 type-check :
