@@ -66,7 +66,7 @@ def generate_help(
         desc = ""
 
     hlp = "\n".join(map(_format_argument, args))
-    output = desc + header.string + "\n" + hlp
+    output = desc + header + "\n" + hlp
     return output
 
 
