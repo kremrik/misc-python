@@ -7,7 +7,10 @@ GREEN := \e[32m
 #----------------------------------------------------------
 
 .PHONY: check
-check : black-format flake8-lint type-check success
+check : unit-tests black-format flake8-lint type-check success
+
+.PHONY: pre-commit
+pre-commit: unit-tests black-check flake8-lint type-check success 
 
 .PHONY: unit-tests
 unit-tests :
