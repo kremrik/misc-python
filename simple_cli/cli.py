@@ -36,9 +36,9 @@ def cli(
     arg_names = [a.arg for a in opts]
     bad_args = list(set(cli_args) - set(arg_names))
     if bad_args:
-        msg = Colors.red(
+        msg = Colors.red(  # type: ignore
             f"Incorrect argument(s): {bad_args}"
-        )  # type: ignore
+        )
         print(msg)
         exit(1)
 
