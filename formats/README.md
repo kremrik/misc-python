@@ -14,3 +14,5 @@ Colors.red("RED TEXT")
 Styles.bold(Colors.red("BOLD RED TEXT"))
 '\x1b[1;31mBOLD RED TEXT\x1b[0m'
 ```
+
+[![asciicast](https://asciinema.org/a/7tWOtxzMIz5QfgYuVk7uSKZCA.svg)](https://asciinema.org/a/7tWOtxzMIz5QfgYuVk7uSKZCA)
