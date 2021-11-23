@@ -19,6 +19,7 @@ unit-tests :
 	@echo -e        '----------$(NO_COLOR)'
 	@python3 -m unittest discover -v
 
+# no type-check for typecheck (hah) module because it freaks out over things that don't matter
 .PHONY: type-check
 type-check :
 	@echo
@@ -31,21 +32,21 @@ black-format :
 	@echo
 	@echo -e '$(BLUE)black-format'
 	@echo -e 		'------------$(NO_COLOR)'
-	@black formats simple_cli -l $(LINE_LENGTH)
+	@black formats simple_cli typecheck -l $(LINE_LENGTH)
 
 .PHONY: black-check
 black-check :
 	@echo
 	@echo -e '$(BLUE)black-format'
 	@echo -e 		'------------$(NO_COLOR)'
-	@black formats simple_cli -l $(LINE_LENGTH) --check
+	@black formats simple_cli typecheck -l $(LINE_LENGTH) --check
 
 .PHONY: flake8-lint
 flake8-lint :
 	@echo
 	@echo -e '$(BLUE)flake8-lint'
 	@echo -e 		'-----------$(NO_COLOR)'
-	@flake8 formats simple_cli \
+	@flake8 formats simple_cli typecheck \
 		--max-line-length $(LINE_LENGTH) \
 		--ignore=E501,E731,F401 \
 		--count \

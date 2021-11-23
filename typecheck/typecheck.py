@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
-from functools import wraps
 from inspect import getfullargspec, FullArgSpec
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 
 @dataclass(frozen=True)
@@ -26,13 +25,16 @@ def parse_inputs(
     args_and_varargs = process_args(spec, args)
     kwonlyargs_and_varkw = process_kwargs(spec, kwargs)
 
-    all_inputs = {**args_and_varargs, **kwonlyargs_and_varkw}
+    all_inputs = {
+        **args_and_varargs,
+        **kwonlyargs_and_varkw,
+    }
 
     return Input(**all_inputs)
 
 
 def process_args(
-    spec: FullArgSpec, args: tuple
+    spec: FullArgSpec, args: Optional[tuple]
 ) -> dict:
     s_args = spec.args
     s_varargs = spec.varargs
@@ -69,7 +71,7 @@ def process_args(
 
 
 def process_kwargs(
-    spec: FullArgSpec, kwargs: dict
+    spec: FullArgSpec, kwargs: Optional[dict]
 ) -> dict:
     s_kwonlyargs = spec.kwonlyargs
     s_varkw = spec.varkw
@@ -106,9 +108,7 @@ def process_kwargs(
             if k in s_kwonlyargs
         }
         o_varkw = {
-            k: v
-            for k, v in kwargs.items()
-            if k in extra
+            k: v for k, v in kwargs.items() if k in extra
         }
         output["kwonlyargs"] = o_kwonlyargs
         output["varkw"] = o_varkw
