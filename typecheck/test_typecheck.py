@@ -107,23 +107,6 @@ class test_parse_inputs_happy_path(unittest.TestCase):
         )
         self.assertEqual(expect, actual)
 
-    def test_args_varargs_kwonlyargs_and_varkw(self):
-        def fnc(a, b, *args, c, d, **kwargs):
-            pass
-
-        expect = Input(
-            args={"a": 1, "b": 2},
-            varargs=[3, 4],
-            kwonlyargs={"c": 3, "d": 4},
-            varkw={"e": 5, "f": 6},
-        )
-        actual = parse_inputs(
-            fnc,
-            args=[1, 2, 3, 4],
-            kwargs={"c": 3, "d": 4, "e": 5, "f": 6},
-        )
-        self.assertEqual(expect, actual)
-
     def test_one_default_arg(self):
         def fnc(x=None):
             pass
@@ -170,6 +153,23 @@ class test_parse_inputs_happy_path(unittest.TestCase):
 
         expect = Input(kwonlyargs={"x": 1, "y": 2})
         actual = parse_inputs(fnc, kwargs={"x": 1})
+        self.assertEqual(expect, actual)
+
+    def test_everything(self):
+        def fnc(a, b, *args, c, d=4, **kwargs):
+            pass
+
+        expect = Input(
+            args={"a": 1, "b": 2},
+            varargs=[3, 4],
+            kwonlyargs={"c": 3, "d": 4},
+            varkw={"e": 5, "f": 6},
+        )
+        actual = parse_inputs(
+            fnc,
+            args=[1, 2, 3, 4],
+            kwargs={"c": 3, "e": 5, "f": 6},
+        )
         self.assertEqual(expect, actual)
 
 
