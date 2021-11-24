@@ -1,20 +1,68 @@
 from dataclasses import dataclass, field
+from functools import lru_cache
 from inspect import getfullargspec, FullArgSpec
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
+from warnings import warn
+
+
+@dataclass(frozen=True)
+class Args:
+    name: str
+    values: list = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class Kwargs:
+    name: str
+    values: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class Input:
     args: dict = field(default_factory=dict)
-    varargs: list = field(default_factory=list)
+    varargs: Args = None
     kwonlyargs: dict = field(default_factory=dict)
-    varkw: dict = field(default_factory=dict)
+    varkw: Kwargs = None
 
 
 class TypeCheckError(TypeError):
     pass
 
 
+# ---------------------------------------------------------
+def check_types(values: Input, typehints: dict) -> None:
+    if not typehints:
+        return True
+
+    errors = []
+    if errors:
+        msg = "\n".join(
+            [
+                f"Param {p} expected {typehints[p]} given {values[p]}"
+                for p in errors
+            ]
+        )
+        raise TypeCheckError(msg)
+
+    return True
+
+
+def check_type(value: Any, typehint) -> bool:
+    if isinstance(typehint, type):
+        return _pyobject_validator(value, typehint)
+    else:
+        msg = f"Type check for {typehint} is not yet supported, ignoring"
+        warn(msg)
+        return True
+
+
+def _pyobject_validator(
+    value: Any, typehint: type
+) -> Callable:
+    return isinstance(value, typehint)
+
+
+# ---------------------------------------------------------
 def parse_inputs(
     fnc: Callable,
     args: Optional[tuple] = None,
@@ -38,7 +86,7 @@ def process_args(
 ) -> dict:
     output = {
         "args": {},
-        "varargs": [],
+        "varargs": None,
     }
 
     s_args = spec.args
@@ -72,7 +120,9 @@ def process_args(
     if len(args) > len(s_args) and s_varargs:
         cutoff = len(s_args)
         o_args = dict(zip(s_args, args[:cutoff]))
-        o_varargs = list(args[cutoff:])
+        o_varargs = Args(
+            name=s_varargs, values=list(args[cutoff:])
+        )
         output["args"].update(o_args)
         output["varargs"] = o_varargs
         return output
@@ -96,7 +146,7 @@ def process_kwargs(
 ) -> dict:
     output = {
         "kwonlyargs": {},
-        "varkw": {},
+        "varkw": None,
     }
 
     s_kwonlyargs = spec.kwonlyargs
@@ -136,9 +186,14 @@ def process_kwargs(
             for k, v in kwargs.items()
             if k in s_kwonlyargs
         }
-        o_varkw = {
-            k: v for k, v in kwargs.items() if k in extra
-        }
+        o_varkw = Kwargs(
+            name=s_varkw,
+            values={
+                k: v
+                for k, v in kwargs.items()
+                if k in extra
+            },
+        )
         output["kwonlyargs"].update(o_kwonlyargs)
         output["varkw"] = o_varkw
         return output
@@ -152,5 +207,6 @@ def _default_kwargs_map(spec: FullArgSpec) -> dict:
 
 
 # ---------------------------------------------------------
+@lru_cache(maxsize=None)
 def get_fnc_spec(fnc: Callable) -> FullArgSpec:
     return getfullargspec(fnc)

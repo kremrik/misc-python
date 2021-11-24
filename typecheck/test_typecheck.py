@@ -1,10 +1,42 @@
 from typecheck.typecheck import (
+    check_types,
     parse_inputs,
     Input,
+    Args,
+    Kwargs,
     TypeCheckError,
 )
 
 import unittest
+
+
+class test_checktypes_happy_path(unittest.TestCase):
+    def test_no_values_no_typehints(self):
+        values = Input()
+        typehints = {}
+        expect = True
+        actual = check_types(values, typehints)
+        self.assertEqual(expect, actual)
+
+    def test_values_no_typehints(self):
+        values = {"x": 1}
+        typehints = {}
+        expect = True
+        actual = check_types(values, typehints)
+        self.assertEqual(expect, actual)
+
+    @unittest.skip("")
+    def test_values_and_typehints(self):
+        values = {
+            "a": 1,
+            "b": 3.14,
+            "args": ["hi", "bye"],
+            "kwargs": {"c": b"1"},
+        }
+        typehints = {"x": int, "y": float}
+        expect = True
+        actual = check_types(values, typehints)
+        self.assertEqual(expect, actual)
 
 
 class test_parse_inputs_happy_path(unittest.TestCase):
@@ -36,7 +68,9 @@ class test_parse_inputs_happy_path(unittest.TestCase):
         def fnc(*args):
             pass
 
-        expect = Input(varargs=[1])
+        expect = Input(
+            varargs=Args(name="args", values=[1])
+        )
         actual = parse_inputs(fnc, args=[1])
         self.assertEqual(expect, actual)
 
@@ -44,7 +78,9 @@ class test_parse_inputs_happy_path(unittest.TestCase):
         def fnc(*args):
             pass
 
-        expect = Input(varargs=[1, 2, 3])
+        expect = Input(
+            varargs=Args(name="args", values=[1, 2, 3])
+        )
         actual = parse_inputs(fnc, args=[1, 2, 3])
         self.assertEqual(expect, actual)
 
@@ -53,7 +89,8 @@ class test_parse_inputs_happy_path(unittest.TestCase):
             pass
 
         expect = Input(
-            args={"x": 1, "y": 2}, varargs=[3, 4]
+            args={"x": 1, "y": 2},
+            varargs=Args(name="args", values=[3, 4]),
         )
         actual = parse_inputs(fnc, args=[1, 2, 3, 4])
         self.assertEqual(expect, actual)
@@ -80,7 +117,9 @@ class test_parse_inputs_happy_path(unittest.TestCase):
         def fnc(**kwargs):
             pass
 
-        expect = Input(varkw={"x": 1})
+        expect = Input(
+            varkw=Kwargs(name="kwargs", values={"x": 1})
+        )
         actual = parse_inputs(fnc, kwargs={"x": 1})
         self.assertEqual(expect, actual)
 
@@ -88,7 +127,12 @@ class test_parse_inputs_happy_path(unittest.TestCase):
         def fnc(**kwargs):
             pass
 
-        expect = Input(varkw={"x": 1, "y": 2, "z": 3})
+        expect = Input(
+            varkw=Kwargs(
+                name="kwargs",
+                values={"x": 1, "y": 2, "z": 3},
+            )
+        )
         actual = parse_inputs(
             fnc, kwargs={"x": 1, "y": 2, "z": 3}
         )
@@ -100,7 +144,9 @@ class test_parse_inputs_happy_path(unittest.TestCase):
 
         expect = Input(
             kwonlyargs={"i": -1, "j": 0},
-            varkw={"x": 1, "y": 2},
+            varkw=Kwargs(
+                name="kwargs", values={"x": 1, "y": 2}
+            ),
         )
         actual = parse_inputs(
             fnc, kwargs={"i": -1, "j": 0, "x": 1, "y": 2}
@@ -161,9 +207,11 @@ class test_parse_inputs_happy_path(unittest.TestCase):
 
         expect = Input(
             args={"a": 1, "b": 2},
-            varargs=[3, 4],
+            varargs=Args(name="args", values=[3, 4]),
             kwonlyargs={"c": 3, "d": 4},
-            varkw={"e": 5, "f": 6},
+            varkw=Kwargs(
+                name="kwargs", values={"e": 5, "f": 6}
+            ),
         )
         actual = parse_inputs(
             fnc,
