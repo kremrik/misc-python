@@ -122,7 +122,30 @@ class test_parse_inputs_happy_path(unittest.TestCase):
             args=[1, 2, 3, 4],
             kwargs={"c": 3, "d": 4, "e": 5, "f": 6},
         )
-        print(actual)
+        self.assertEqual(expect, actual)
+
+    def test_one_default_arg(self):
+        def fnc(x=None):
+            pass
+
+        expect = Input(args={"x": None})
+        actual = parse_inputs(fnc)
+        self.assertEqual(expect, actual)
+
+    def test_mult_default_arg(self):
+        def fnc(x=1, y=2, z=3):
+            pass
+
+        expect = Input(args={"x": 1, "y": 2, "z": 3})
+        actual = parse_inputs(fnc)
+        self.assertEqual(expect, actual)
+
+    def test_one_arg_one_default_arg(self):
+        def fnc(x, y=None):
+            pass
+
+        expect = Input(args={"x": 1, "y": None})
+        actual = parse_inputs(fnc, args=(1,))
         self.assertEqual(expect, actual)
 
 

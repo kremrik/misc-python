@@ -36,38 +36,59 @@ def parse_inputs(
 def process_args(
     spec: FullArgSpec, args: Optional[tuple]
 ) -> dict:
-    s_args = spec.args
-    s_varargs = spec.varargs
-
     output = {
         "args": {},
         "varargs": [],
     }
 
+    s_args = spec.args
+    s_varargs = spec.varargs
+    s_req_args = s_args
+
+    defaults = _default_args_map(spec)
+    if defaults:
+        output["args"].update(defaults)
+        pos = len(defaults)
+        s_req_args = s_args[pos:]
+
     err_msg = f"Callable takes positional argument(s) {s_args}, but was given {args}"
 
-    if not args and s_args:
+    if not args and s_req_args:
         raise TypeCheckError(err_msg)
-    elif not args and not s_args:
+    elif not args and not s_req_args:
         return output
 
-    if len(args) < len(s_args):
+    if len(args) < len(s_req_args):
         raise TypeCheckError(err_msg)
-
-    if len(args) == len(s_args):
-        output["args"] = dict(zip(s_args, args))
-        return output
 
     if len(args) > len(s_args) and not s_varargs:
         raise TypeCheckError(err_msg)
+
+    if len(s_req_args) <= len(args) <= len(s_args):
+        o_args = dict(zip(s_args, args))
+        output["args"].update(o_args)
+        return output
 
     if len(args) > len(s_args) and s_varargs:
         cutoff = len(s_args)
         o_args = dict(zip(s_args, args[:cutoff]))
         o_varargs = list(args[cutoff:])
-        output["args"] = o_args
+        output["args"].update(o_args)
         output["varargs"] = o_varargs
         return output
+
+
+def _default_args_map(spec: FullArgSpec) -> dict:
+    defaults = spec.defaults
+    if not defaults:
+        return {}
+
+    args = spec.args
+    pos = len(defaults)
+    default_args = args[pos:] or args
+    default_vals = defaults
+
+    return dict(zip(default_args, default_vals))
 
 
 def process_kwargs(
