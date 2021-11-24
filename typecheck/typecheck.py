@@ -94,29 +94,37 @@ def _default_args_map(spec: FullArgSpec) -> dict:
 def process_kwargs(
     spec: FullArgSpec, kwargs: Optional[dict]
 ) -> dict:
-    s_kwonlyargs = spec.kwonlyargs
-    s_varkw = spec.varkw
-
     output = {
         "kwonlyargs": {},
         "varkw": {},
     }
 
+    s_kwonlyargs = spec.kwonlyargs
+    s_varkw = spec.varkw
+    req_s_kwonlyargs = s_kwonlyargs
+
+    defaults = _default_kwargs_map(spec)
+    if defaults:
+        output["kwonlyargs"].update(defaults)
+        req_s_kwonlyargs = [
+            a for a in s_kwonlyargs if a not in defaults
+        ]
+
     err_msg = f"Callable takes keyword argument(s) {s_kwonlyargs}, but was given {kwargs}"
 
-    if not kwargs and s_kwonlyargs:
+    if not kwargs and req_s_kwonlyargs:
         raise TypeCheckError(err_msg)
-    elif not kwargs and not s_kwonlyargs:
+    elif not kwargs and not req_s_kwonlyargs:
         return output
 
-    missing = list(set(s_kwonlyargs) - set(kwargs))
+    missing = list(set(req_s_kwonlyargs) - set(kwargs))
     extra = list(set(kwargs) - set(s_kwonlyargs))
 
     if missing:
         raise TypeCheckError(err_msg)
 
     if not missing and not extra:
-        output["kwonlyargs"] = kwargs
+        output["kwonlyargs"].update(kwargs)
         return output
 
     if extra and not s_varkw:
@@ -131,9 +139,16 @@ def process_kwargs(
         o_varkw = {
             k: v for k, v in kwargs.items() if k in extra
         }
-        output["kwonlyargs"] = o_kwonlyargs
+        output["kwonlyargs"].update(o_kwonlyargs)
         output["varkw"] = o_varkw
         return output
+
+
+def _default_kwargs_map(spec: FullArgSpec) -> dict:
+    defaults = spec.kwonlydefaults
+    if not defaults:
+        return {}
+    return defaults
 
 
 # ---------------------------------------------------------

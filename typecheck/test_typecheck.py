@@ -148,6 +148,30 @@ class test_parse_inputs_happy_path(unittest.TestCase):
         actual = parse_inputs(fnc, args=(1,))
         self.assertEqual(expect, actual)
 
+    def test_one_default_kwonlyargs(self):
+        def fnc(*, x=None):
+            pass
+
+        expect = Input(kwonlyargs={"x": None})
+        actual = parse_inputs(fnc)
+        self.assertEqual(expect, actual)
+
+    def test_mult_default_kwonlyargs(self):
+        def fnc(*, x=1, y=2, z=3):
+            pass
+
+        expect = Input(kwonlyargs={"x": 1, "y": 2, "z": 3})
+        actual = parse_inputs(fnc)
+        self.assertEqual(expect, actual)
+
+    def test_one_kwonlyargs_one_default_kwonlyargs(self):
+        def fnc(*, x, y=2):
+            pass
+
+        expect = Input(kwonlyargs={"x": 1, "y": 2})
+        actual = parse_inputs(fnc, kwargs={"x": 1})
+        self.assertEqual(expect, actual)
+
 
 class test_parse_inputs_exceptions(unittest.TestCase):
     def test_no_params_and_given_args(self):
