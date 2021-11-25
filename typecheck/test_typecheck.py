@@ -14,29 +14,48 @@ class test_checktypes_happy_path(unittest.TestCase):
     def test_no_values_no_typehints(self):
         values = Input()
         typehints = {}
-        expect = True
+        expect = None
         actual = check_types(values, typehints)
         self.assertEqual(expect, actual)
 
     def test_values_no_typehints(self):
-        values = {"x": 1}
+        values = Input(args={"x": 1})
         typehints = {}
-        expect = True
+        expect = None
         actual = check_types(values, typehints)
         self.assertEqual(expect, actual)
 
-    @unittest.skip("")
     def test_values_and_typehints(self):
-        values = {
-            "a": 1,
-            "b": 3.14,
-            "args": ["hi", "bye"],
-            "kwargs": {"c": b"1"},
+        values = Input(
+            args={"a": 1, "b": 2.0},
+            varargs=Args(
+                name="args", values=["hi", "hello"]
+            ),
+            kwonlyargs={"c": 3, "d": b"4"},
+            varkw=Kwargs(
+                name="kwargs", values={"e": 5, "f": 6}
+            ),
+        )
+        typehints = {
+            "a": int,
+            "b": float,
+            "args": str,
+            "c": int,
+            "d": bytes,
+            "kwargs": int,
         }
-        typehints = {"x": int, "y": float}
-        expect = True
+        expect = None
         actual = check_types(values, typehints)
         self.assertEqual(expect, actual)
+
+
+@unittest.skip("")
+class test_checktypes_exceptions(unittest.TestCase):
+    def test(self):
+        values = Input(args={"x": 1})
+        typehints = {"x": float}
+        with self.assertRaises(TypeCheckError):
+            check_types(values, typehints)
 
 
 class test_parse_inputs_happy_path(unittest.TestCase):
@@ -219,6 +238,8 @@ class test_parse_inputs_happy_path(unittest.TestCase):
             kwargs={"c": 3, "e": 5, "f": 6},
         )
         self.assertEqual(expect, actual)
+
+    # TODO: test for allowed args/kwargs that aren't used
 
 
 class test_parse_inputs_exceptions(unittest.TestCase):

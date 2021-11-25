@@ -7,22 +7,36 @@ from warnings import warn
 
 @dataclass(frozen=True)
 class Args:
-    name: str
+    name: str = None
     values: list = field(default_factory=list)
+
+    def __bool__(self) -> bool:
+        return bool(self.values)
 
 
 @dataclass(frozen=True)
 class Kwargs:
-    name: str
+    name: str = None
     values: dict = field(default_factory=dict)
+
+    def __bool__(self) -> bool:
+        return bool(self.values)
 
 
 @dataclass(frozen=True)
 class Input:
     args: dict = field(default_factory=dict)
-    varargs: Args = None
+    varargs: Args = Args()
     kwonlyargs: dict = field(default_factory=dict)
-    varkw: Kwargs = None
+    varkw: Kwargs = Kwargs()
+
+    def __bool__(self) -> bool:
+        return (
+            self.args
+            and self.varargs
+            and self.kwonlyargs
+            and self.varkw
+        )
 
 
 class TypeCheckError(TypeError):
@@ -32,34 +46,88 @@ class TypeCheckError(TypeError):
 # ---------------------------------------------------------
 def check_types(values: Input, typehints: dict) -> None:
     if not typehints:
-        return True
+        return
+
+    params = {}
+    params.update(values.args)
+    params.update(values.kwonlyargs)
+    params_hints = {
+        k: v for k, v in typehints.items() if k in params
+    }
+
+    args = values.varargs.values
+    args_hint = typehints[values.varargs.name]
+
+    kwargs = values.varkw.values
+    kwargs_hint = typehints.get(values.varkw.name)
+
+    check_params(params, params_hints)
+    check_args(args, args_hint)
+    check_kwargs(kwargs, kwargs_hint)
+
+    return
+
+
+def check_params(values: dict, typehints: dict) -> None:
+    if not typehints:
+        return
 
     errors = []
+    for param, hint in typehints.items():
+        if not _check_params(values[param], hint):
+            errors.append(param)
+
     if errors:
         msg = "\n".join(
             [
-                f"Param {p} expected {typehints[p]} given {values[p]}"
+                f"Param {p} expected {typehints[p]} but received {values[p]}"
                 for p in errors
             ]
         )
         raise TypeCheckError(msg)
 
-    return True
+    return
 
 
-def check_type(value: Any, typehint) -> bool:
-    if isinstance(typehint, type):
-        return _pyobject_validator(value, typehint)
-    else:
+def _check_params(value: Any, typehint) -> bool:
+    if not isinstance(typehint, type):
         msg = f"Type check for {typehint} is not yet supported, ignoring"
         warn(msg)
         return True
 
-
-def _pyobject_validator(
-    value: Any, typehint: type
-) -> Callable:
     return isinstance(value, typehint)
+
+
+def check_args(values: tuple, typehint) -> None:
+    if not typehint:
+        return
+
+    if not _check_args(values, typehint):
+        msg = f"varargs must all be of type {typehint}"
+        raise TypeCheckError(msg)
+    return
+
+
+def _check_args(value: tuple, typehint) -> bool:
+    if not isinstance(typehint, type):
+        msg = f"Type check for {typehint} is not yet supported, ignoring"
+        warn(msg)
+        return True
+
+    for v in value:
+        if not isinstance(v, typehint):
+            return False
+
+    return True
+
+
+def check_kwargs(values: dict, typehint) -> None:
+    if not typehint:
+        return
+
+    values = values.values()  # yikes
+
+    return check_args(values, typehint)
 
 
 # ---------------------------------------------------------
@@ -86,7 +154,7 @@ def process_args(
 ) -> dict:
     output = {
         "args": {},
-        "varargs": None,
+        "varargs": Args(),
     }
 
     s_args = spec.args
@@ -146,7 +214,7 @@ def process_kwargs(
 ) -> dict:
     output = {
         "kwonlyargs": {},
-        "varkw": None,
+        "varkw": Kwargs(),
     }
 
     s_kwonlyargs = spec.kwonlyargs
