@@ -9,3 +9,4 @@ sphinx/build
 *.db
 tester.py
 tmp
+_tester.py
