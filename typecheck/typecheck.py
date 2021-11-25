@@ -101,7 +101,7 @@ def check_params(values: dict, typehints: dict) -> None:
     if errors:
         msg = "\n".join(
             [
-                f"Param {p} expected {typehints[p]} but received {values[p]}"
+                f"Param {p} expected {typehints[p]} but received {type(values[p])}"
                 for p in errors
             ]
         )
@@ -148,7 +148,10 @@ def check_kwargs(values: dict, typehint) -> None:
 
     values = values.values()  # yikes
 
-    return check_args(values, typehint)
+    if not _check_args(values, typehint):
+        msg = f"varkw must all be of type {typehint}"
+        raise TypeCheckError(msg)
+    return
 
 
 # ---------------------------------------------------------
@@ -159,6 +162,7 @@ def parse_inputs(
 ) -> Input:
     spec = get_fnc_spec(fnc)
 
+    # TODO: collect exception values here for full report
     args_and_varargs = process_args(spec, args)
     kwonlyargs_and_varkw = process_kwargs(spec, kwargs)
 
