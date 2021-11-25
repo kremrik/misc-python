@@ -10,7 +10,7 @@ from typecheck.typecheck import (
 import unittest
 
 
-class test_checktypes_happy_path(unittest.TestCase):
+class test_check_types_happy_path(unittest.TestCase):
     def test_no_values_no_typehints(self):
         values = Input()
         typehints = {}
@@ -49,9 +49,8 @@ class test_checktypes_happy_path(unittest.TestCase):
         self.assertEqual(expect, actual)
 
 
-@unittest.skip("")
-class test_checktypes_exceptions(unittest.TestCase):
-    def test(self):
+class test_check_types_exceptions(unittest.TestCase):
+    def test_missing_positional_arg(self):
         values = Input(args={"x": 1})
         typehints = {"x": float}
         with self.assertRaises(TypeCheckError):

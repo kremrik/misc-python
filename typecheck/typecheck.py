@@ -56,10 +56,14 @@ def check_types(values: Input, typehints: dict) -> None:
     }
 
     args = values.varargs.values
-    args_hint = typehints[values.varargs.name]
+    args_hint = (
+        typehints[values.varargs.name] if args else {}
+    )
 
     kwargs = values.varkw.values
-    kwargs_hint = typehints.get(values.varkw.name)
+    kwargs_hint = (
+        typehints.get(values.varkw.name) if kwargs else {}
+    )
 
     check_params(params, params_hints)
     check_args(args, args_hint)
