@@ -1,6 +1,7 @@
 from typecheck.typecheck import (
     check_types,
     parse_inputs,
+    typecheck,
     Input,
     Args,
     Kwargs,
@@ -10,6 +11,98 @@ from typecheck.typecheck import (
 import unittest
 
 
+class test_typecheck(unittest.TestCase):
+    def test_ignores_without_hints(self):
+        @typecheck
+        def fnc(a):
+            pass
+
+        with self.subTest("int value"):
+            self.assertIsNone(fnc(1))
+        with self.subTest("str value"):
+            self.assertIsNone(fnc("1"))
+
+    def test_args(self):
+        @typecheck
+        def fnc(a: int):
+            pass
+
+        self.assertIsNone(fnc(1))
+
+    def test_args_with_default(self):
+        @typecheck
+        def fnc(a: int, b: int = 2):
+            pass
+
+        self.assertIsNone(fnc(1))
+
+    def test_args_varargs(self):
+        @typecheck
+        def fnc(a: int, *args: str):
+            pass
+
+        self.assertIsNone(fnc(1, "hi"))
+
+    def test_args_no_varargs(self):
+        @typecheck
+        def fnc(a: int, *args: str):
+            pass
+
+        self.assertIsNone(fnc(1))
+
+    def test_args_kwonlyargs(self):
+        @typecheck
+        def fnc(a: int, *, b: float):
+            pass
+
+        self.assertIsNone(fnc(1, b=3.14))
+
+    def test_args_varargs_kwonlyargs(self):
+        @typecheck
+        def fnc(a: int, *args: str, b: float):
+            pass
+
+        self.assertIsNone(fnc(1, "hi", b=3.14))
+
+    def test_args_varargs_kwonlyargs_with_default(self):
+        @typecheck
+        def fnc(
+            a: int, *args: str, b: float, c: str = "hi"
+        ):
+            pass
+
+        self.assertIsNone(fnc(1, "hi", b=3.14))
+
+    def test_args_varargs_kwonlyargs_varkw(self):
+        @typecheck
+        def fnc(
+            a: int, *args: str, b: float, **kwargs: bytes
+        ):
+            pass
+
+        self.assertIsNone(fnc(1, "hi", b=3.14, c=b"1"))
+
+
+class test_typecheck_exceptions(unittest.TestCase):
+    def test_missing_args(self):
+        @typecheck
+        def fnc(a: int):
+            pass
+
+        with self.assertRaises(TypeCheckError):
+            fnc()
+
+    def test_missing_kwonlyargs(self):
+        @typecheck
+        def fnc(a: int, *args, b: float):
+            pass
+
+        with self.assertRaises(TypeCheckError):
+            fnc(1)
+
+
+# implementation tests below
+# =========================================================
 class test_check_types_happy_path(unittest.TestCase):
     def test_no_values_no_typehints(self):
         values = Input()
@@ -57,6 +150,7 @@ class test_check_types_exceptions(unittest.TestCase):
             check_types(values, typehints)
 
 
+# ---------------------------------------------------------
 class test_parse_inputs_happy_path(unittest.TestCase):
     def test_no_params(self):
         def fnc():
@@ -237,8 +331,6 @@ class test_parse_inputs_happy_path(unittest.TestCase):
             kwargs={"c": 3, "e": 5, "f": 6},
         )
         self.assertEqual(expect, actual)
-
-    # TODO: test for allowed args/kwargs that aren't used
 
 
 class test_parse_inputs_exceptions(unittest.TestCase):

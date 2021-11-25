@@ -1,10 +1,27 @@
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import lru_cache, wraps
 from inspect import getfullargspec, FullArgSpec
 from typing import Any, Callable, Optional
 from warnings import warn
 
 
+__all__ = ["typecheck"]
+
+
+def typecheck(callable):
+    @wraps(callable)
+    def decorator(*args, **kwargs):
+        values = parse_inputs(
+            fnc=callable, args=args, kwargs=kwargs
+        )
+        typehints = get_fnc_annotations(callable)
+        check_types(values, typehints)
+        return callable(*args, **kwargs)
+
+    return decorator
+
+
+# ---------------------------------------------------------
 @dataclass(frozen=True)
 class Args:
     name: str = None
@@ -282,3 +299,8 @@ def _default_kwargs_map(spec: FullArgSpec) -> dict:
 @lru_cache(maxsize=None)
 def get_fnc_spec(fnc: Callable) -> FullArgSpec:
     return getfullargspec(fnc)
+
+
+def get_fnc_annotations(fnc: Callable) -> dict:
+    spec = get_fnc_spec(fnc)
+    return spec.annotations
