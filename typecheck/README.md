@@ -22,6 +22,21 @@ fnc("2")
 # TypeCheckError: Param x expected <class 'int'> but received <class 'str'>
 ```
 
+##### Ignoring arguments
+```python
+# if you don't care to enforce the type of a parameter, simply don't annotate it
+
+@typecheck
+def ignore(x):
+    print(x)
+
+ignore(1)
+# 1
+
+ignore("two")
+# two
+```
+
 ##### Missing arguments
 ```python
 @typecheck
