@@ -3,27 +3,53 @@ from os import walk
 from os.path import getmtime, join
 
 
-class WatchDir:
-    def __init__(self, path = None) -> None:
-        self.tracker = Tracker.create()
-        self.path = path if path else "."
+IGNORE_PREFIXES = ["_", "."]
 
-    def event_detected(self):
+
+class Watch:
+    def __init__(self, path = None) -> None:
+        self.path = path if path else "."
+        self.tracker = self._make_tracker(self.path)
+        self._created = []
+        self._modified = []
+        self._removed = []
+
+    @property
+    def created(self):
         all = list(list_files(self.path))
         new = new_files(self.tracker, all)
-        mod = modified_files(self.tracker, all)
-        rmd = removed_files(self.tracker, all)
+        self._created = new
+        return self._created
 
-        for file in new:
+    @property
+    def modified(self):
+        all = list(list_files(self.path))
+        mod = modified_files(self.tracker, all)
+        self._modified = mod
+        return self._modified
+
+    @property
+    def removed(self):
+        all = list(list_files(self.path))
+        rmd = removed_files(self.tracker, all)
+        self._removed = rmd
+        return self._removed
+
+    def ack(self):
+        for file in self._created:
             self.tracker = Tracker.add(self.tracker, file)
-        for file in mod:
+        for file in self._modified:
             self.tracker = Tracker.update(self.tracker, file)
-        for file in rmd:
+        for file in self._removed:
             self.tracker = Tracker.remove(self.tracker, file)
 
-        if new or mod:
-            return True
-        return False
+    @staticmethod
+    def _make_tracker(path):
+        tracker = Tracker.create()
+        all = list(list_files(path))
+        for file in all:
+            tracker = Tracker.add(tracker, file)
+        return tracker
 
 
 # ---------------------------------------------------------
@@ -32,9 +58,6 @@ def list_files(path = None):
         path = "."
 
     for root, dirs, files in walk(path):
-        if "__pycache__" in dirs:
-            dirs.remove("__pycache__")
-        
         yield from (join(root, file) for file in files)
 
 
