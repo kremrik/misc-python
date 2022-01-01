@@ -1,63 +1,90 @@
 from copy import copy
+from fnmatch import fnmatch
 from os import walk
 from os.path import getmtime, join
 
 
-IGNORE_PREFIXES = ["_", "."]
-
-
 class Watch:
-    def __init__(self, path = None) -> None:
+    def __init__(
+        self,
+        path=".",
+        ignore_dirs=(),
+        ignore_files=(),
+    ) -> None:
         self.path = path if path else "."
-        self.tracker = self._make_tracker(self.path)
+        self.ignore_dirs = ignore_dirs
+        self.ignore_files = ignore_files
+
+        self._tracker = self._make_tracker(
+            self.path, self.ignore_dirs, self.ignore_files
+        )
         self._created = []
         self._modified = []
         self._removed = []
 
     @property
+    def files(self):
+        return Tracker.files(self._tracker)
+
+    @property
     def created(self):
-        all = list(list_files(self.path))
-        new = new_files(self.tracker, all)
+        new = new_files(self._tracker, self._all_files())
         self._created = new
         return self._created
 
     @property
     def modified(self):
-        all = list(list_files(self.path))
-        mod = modified_files(self.tracker, all)
+        mod = modified_files(self._tracker, self._all_files())
         self._modified = mod
         return self._modified
 
     @property
     def removed(self):
-        all = list(list_files(self.path))
-        rmd = removed_files(self.tracker, all)
+        rmd = removed_files(self._tracker, self._all_files())
         self._removed = rmd
         return self._removed
 
     def ack(self):
         for file in self._created:
-            self.tracker = Tracker.add(self.tracker, file)
+            self._tracker = Tracker.add(self._tracker, file)
+            self._created = []
         for file in self._modified:
-            self.tracker = Tracker.update(self.tracker, file)
+            self._tracker = Tracker.update(self._tracker, file)
+            self._modified = []
         for file in self._removed:
-            self.tracker = Tracker.remove(self.tracker, file)
+            self._tracker = Tracker.remove(self._tracker, file)
+            self._removed = []
 
     @staticmethod
-    def _make_tracker(path):
+    def _make_tracker(path, ignore_dirs, ignore_files):
         tracker = Tracker.create()
-        all = list(list_files(path))
+        all = list_files(path, ignore_dirs, ignore_files)
         for file in all:
             tracker = Tracker.add(tracker, file)
         return tracker
 
+    def _all_files(self):
+        return list_files(
+            self.path, self.ignore_dirs, self.ignore_files
+        )
+
 
 # ---------------------------------------------------------
-def list_files(path = None):
-    if not path:
-        path = "."
-
+def list_files(
+    path=".", ignore_dirs=(), ignore_files=()
+):
     for root, dirs, files in walk(path):
+        dirs_c = copy(dirs)
+        for dir in dirs_c:
+            for patt in ignore_dirs:
+                if fnmatch(dir, patt):
+                    dirs.remove(dir)
+        files_c = copy(files)
+        for file in files_c:
+            for patt in ignore_files:
+                if fnmatch(file, patt):
+                    files.remove(file)
+
         yield from (join(root, file) for file in files)
 
 
