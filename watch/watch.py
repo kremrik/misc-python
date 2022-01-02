@@ -38,13 +38,17 @@ class Watch:
 
     @property
     def modified(self):
-        mod = modified_files(self._tracker, self._all_files())
+        mod = modified_files(
+            self._tracker, self._all_files()
+        )
         self._modified = mod
         return list(self._modified)
 
     @property
     def removed(self):
-        rmd = removed_files(self._tracker, self._all_files())
+        rmd = removed_files(
+            self._tracker, self._all_files()
+        )
         self._removed = rmd
         return list(self._removed)
 
@@ -60,9 +64,10 @@ class Watch:
             self._removed = {}
 
     def _all_files(self):
-        return all_files(
+        all = all_files(
             self.path, self.ignore_dirs, self.ignore_files
         )
+        return all
 
 
 # ---------------------------------------------------------
@@ -85,7 +90,7 @@ def removed_files(tracker: Files, all: Files) -> Files:
 def modified_files(tracker: Files, all: Files) -> Files:
     modified = {}
     for file, trk_ts in tracker.items():
-        cur_ts = _mod_ts(file)
+        cur_ts = all[file]
         if cur_ts != trk_ts:
             modified[file] = cur_ts
     return modified
@@ -104,7 +109,7 @@ def all_files(
                 for patt in ignore_dirs:
                     if fnmatch(dir, patt):
                         dirs.remove(dir)
-                        
+
             files_c = copy(files)
             for file in files_c:
                 for patt in ignore_files:
