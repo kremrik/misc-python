@@ -1,7 +1,13 @@
 from copy import copy
 from fnmatch import fnmatch
+from typing import Dict
 from os import walk
-from os.path import getmtime, join
+from os.path import abspath, getmtime, join
+
+
+FileName = str
+ModTS = int
+Files = Dict[FileName, ModTS]
 
 
 class Watch:
@@ -15,142 +21,102 @@ class Watch:
         self.ignore_dirs = ignore_dirs
         self.ignore_files = ignore_files
 
-        self._tracker = self._make_tracker(
-            self.path, self.ignore_dirs, self.ignore_files
-        )
-        self._created = []
-        self._modified = []
-        self._removed = []
+        self._tracker = self._all_files()
+        self._created: Files = {}
+        self._modified: Files = {}
+        self._removed: Files = {}
 
     @property
     def files(self):
-        return Tracker.files(self._tracker)
+        return list(self._tracker)
 
     @property
     def created(self):
         new = new_files(self._tracker, self._all_files())
         self._created = new
-        return self._created
+        return list(self._created)
 
     @property
     def modified(self):
         mod = modified_files(self._tracker, self._all_files())
         self._modified = mod
-        return self._modified
+        return list(self._modified)
 
     @property
     def removed(self):
         rmd = removed_files(self._tracker, self._all_files())
         self._removed = rmd
-        return self._removed
+        return list(self._removed)
 
     def ack(self):
-        for file in self._created:
-            self._tracker = Tracker.add(self._tracker, file)
-            self._created = []
-        for file in self._modified:
-            self._tracker = Tracker.update(self._tracker, file)
-            self._modified = []
-        for file in self._removed:
-            self._tracker = Tracker.remove(self._tracker, file)
-            self._removed = []
-
-    @staticmethod
-    def _make_tracker(path, ignore_dirs, ignore_files):
-        tracker = Tracker.create()
-        all = list_files(path, ignore_dirs, ignore_files)
-        for file in all:
-            tracker = Tracker.add(tracker, file)
-        return tracker
+        for file, ts in self._created.items():
+            self._tracker[file] = ts
+            self._created = {}
+        for file, ts in self._modified.items():
+            self._tracker[file] = ts
+            self._modified = {}
+        for file, ts in self._removed.items():
+            del self._tracker[file]
+            self._removed = {}
 
     def _all_files(self):
-        return list_files(
+        return all_files(
             self.path, self.ignore_dirs, self.ignore_files
         )
 
 
 # ---------------------------------------------------------
-def list_files(
-    path=".", ignore_dirs=(), ignore_files=()
-):
-    for root, dirs, files in walk(path):
-        dirs_c = copy(dirs)
-        for dir in dirs_c:
-            for patt in ignore_dirs:
-                if fnmatch(dir, patt):
-                    dirs.remove(dir)
-        files_c = copy(files)
-        for file in files_c:
-            for patt in ignore_files:
-                if fnmatch(file, patt):
-                    files.remove(file)
-
-        yield from (join(root, file) for file in files)
+def new_files(tracker: Files, all: Files) -> Files:
+    return {
+        file: ts
+        for file, ts in all.items()
+        if file not in tracker
+    }
 
 
-# ---------------------------------------------------------
-def new_files(tracker, all):
-    tracked_files = Tracker.files(tracker)
-    return list(set(all) - set(tracked_files))
+def removed_files(tracker: Files, all: Files) -> Files:
+    return {
+        file: ts
+        for file, ts in tracker.items()
+        if file not in all
+    }
 
 
-def removed_files(tracker, all):
-    tracked_files = Tracker.files(tracker)
-    return list(set(tracked_files) - set(all))
-
-
-def existing_files(tracker, all):
-    tracked_files = Tracker.files(tracker)
-    return list(set(tracked_files) & set(all))
-
-
-def modified_files(tracker, all):
-    existing = existing_files(tracker, all)
-
-    modified = []
-    for file in existing:
-        cur_mtime = _mod_ts(file)
-        trk_mtime = Tracker.get_mtime(tracker, file)
-        
-        if cur_mtime != trk_mtime:
-            modified.append(file)
-    
+def modified_files(tracker: Files, all: Files) -> Files:
+    modified = {}
+    for file, trk_ts in tracker.items():
+        cur_ts = _mod_ts(file)
+        if cur_ts != trk_ts:
+            modified[file] = cur_ts
     return modified
 
 
 # ---------------------------------------------------------
-# using class and static methods just to act like a 
-# file-local "namespace" to keep everything in one module
+def all_files(
+    path=".", ignore_dirs=(), ignore_files=()
+) -> Files:
+    def _list_gen():
+        nonlocal path
+        for root, dirs, files in walk(path):
+            # TODO: needs some DRYing up
+            dirs_c = copy(dirs)
+            for dir in dirs_c:
+                for patt in ignore_dirs:
+                    if fnmatch(dir, patt):
+                        dirs.remove(dir)
+                        
+            files_c = copy(files)
+            for file in files_c:
+                for patt in ignore_files:
+                    if fnmatch(file, patt):
+                        files.remove(file)
 
-class Tracker:
-    @staticmethod
-    def create():
-        return {}
+            for file in files:
+                path = abspath(join(root, file))
+                modts = _mod_ts(path)
+                yield (path, modts)
 
-    @staticmethod
-    def files(tracker):
-        return list(tracker)
-
-    @staticmethod
-    def add(tracker, file):
-        return Tracker.update(tracker, file)
-
-    @staticmethod
-    def remove(tracker, file):
-        tracker = copy(tracker)
-        del tracker[file]
-        return tracker
-
-    @staticmethod
-    def update(tracker, file):
-        tracker = copy(tracker)
-        modts = _mod_ts(file)
-        tracker[file] = modts
-        return tracker
-
-    @staticmethod
-    def get_mtime(tracker, file):
-        return tracker[file]
+    return dict(_list_gen())
 
 
 # ---------------------------------------------------------
