@@ -25,28 +25,28 @@ type-check :
 	@echo
 	@echo -e '$(BLUE)type-check'
 	@echo -e 		'----------$(NO_COLOR)'
-	@mypy formats simple_cli
+	@mypy formats simple_cli watch
 
 .PHONY: black-format
 black-format :
 	@echo
 	@echo -e '$(BLUE)black-format'
 	@echo -e 		'------------$(NO_COLOR)'
-	@black formats simple_cli typecheck -l $(LINE_LENGTH)
+	@black formats simple_cli typecheck watch -l $(LINE_LENGTH)
 
 .PHONY: black-check
 black-check :
 	@echo
 	@echo -e '$(BLUE)black-format'
 	@echo -e 		'------------$(NO_COLOR)'
-	@black formats simple_cli typecheck -l $(LINE_LENGTH) --check
+	@black formats simple_cli typecheck watch -l $(LINE_LENGTH) --check
 
 .PHONY: flake8-lint
 flake8-lint :
 	@echo
 	@echo -e '$(BLUE)flake8-lint'
 	@echo -e 		'-----------$(NO_COLOR)'
-	@flake8 formats simple_cli typecheck \
+	@flake8 formats simple_cli typecheck watch \
 		--max-line-length $(LINE_LENGTH) \
 		--ignore=E501,E731,F401,W503 \
 		--count \
