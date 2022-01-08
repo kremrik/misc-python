@@ -1,43 +1,57 @@
 from os import getenv
-from typing import Generator, IO
 
 # default 4MiB
 MAX_CHUNK_SIZE = getenv("MAX_CHUNK_SIZE", 4 * (1024**2))
 
 
-def chunkstream(
-    buffer: Generator,
-    open_tag: str,
-    close_tag: str,
-    max_chunk_size: int = None
-) -> Generator:
-    # TODO: can this just act like TagGen, accepting a char
-    #  and maintaining its own little state per __call__?
-    if not max_chunk_size:
-        max_chunk_size = MAX_CHUNK_SIZE
+class ChunkGen:
+    def __init__(
+        self,
+        open_tag, 
+        close_tag,
+        max_chunk_size = None
+    ) -> None:
+        self.open_tag = open_tag
+        self.close_tag = close_tag
+        self.max_chunk_size = (
+            max_chunk_size or MAX_CHUNK_SIZE
+        )
+        self._ot = TagGen(open_tag)
+        self._ct = TagGen(close_tag)
+        self._in_tag = False
+        self._chunk = None
 
-    ot = TagGen(open_tag)
-    ct = TagGen(close_tag)
-    in_tag = False
-    chunk = ""
+    def checksize(self):
+        if self._chunk is None:
+            return
+        if len(self._chunk) >= self.max_chunk_size:
+            size = self.max_chunk_size
+            msg = f"Chunk larger than max_chunk_size ({size}b)"
+            raise IOError(msg)
 
-    for char in buffer:
-        if o := ot(char):
-            in_tag = True
-            chunk += o
-            continue
+    def __call__(self, char):
+        if o := self._ot(char):
+            self.checksize()
+            self._in_tag = True
+            if not self._chunk:
+                self._chunk = o
+            else:
+                self._chunk += o
+            return
 
-        if c := ct(char):
-            chunk += char
-            in_tag = False
+        if c := self._ct(char):
+            self.checksize()
+            self._chunk += char
+            self._in_tag = False
 
-        if in_tag:
-            chunk += char
+        if self._in_tag:
+            self.checksize()
+            self._chunk += char
 
-        if chunk and not in_tag:
-            output = chunk
-            chunk = ""
-            yield output
+        if self._chunk and not self._in_tag:
+            output = self._chunk
+            self._chunk = ""
+            return output
 
 
 class TagGen:
@@ -77,14 +91,3 @@ class TagGen:
             return output
         else:
             return None
-
-
-def buffered_char_stream(
-    handler: IO, size: int = 1024
-) -> Generator:
-    segment = handler.read(size)
-
-    while segment:
-        for char in segment:
-            yield char
-        segment = handler.read(size)
