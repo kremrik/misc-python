@@ -1,15 +1,12 @@
 from os import getenv
 
 # default 4MiB
-MAX_CHUNK_SIZE = getenv("MAX_CHUNK_SIZE", 4 * (1024**2))
+MAX_CHUNK_SIZE = getenv("MAX_CHUNK_SIZE", 4 * (1024 ** 2))
 
 
 class ChunkGen:
     def __init__(
-        self,
-        open_tag, 
-        close_tag,
-        max_chunk_size = None
+        self, open_tag, close_tag, max_chunk_size=None
     ) -> None:
         self.open_tag = open_tag
         self.close_tag = close_tag
@@ -39,7 +36,7 @@ class ChunkGen:
                 self._chunk += o
             return
 
-        if c := self._ct(char):
+        if self._ct(char):
             self.checksize()
             self._chunk += char
             self._in_tag = False
