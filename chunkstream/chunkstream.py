@@ -37,9 +37,10 @@ class ChunkGen:
             return
 
         if self._ct(char):
-            self.checksize()
-            self._chunk += char
-            self._in_tag = False
+            if self._in_tag:
+                self.checksize()
+                self._chunk += char
+                self._in_tag = False
 
         if self._in_tag:
             self.checksize()
