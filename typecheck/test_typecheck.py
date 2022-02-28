@@ -9,6 +9,7 @@ from typecheck.typecheck import (
 )
 
 import unittest
+from typing import Optional, Union
 
 
 class test_typecheck(unittest.TestCase):
@@ -82,6 +83,22 @@ class test_typecheck(unittest.TestCase):
 
         self.assertIsNone(fnc(1, "hi", b=3.14, c=b"1"))
 
+    def test_optional(self):
+        @typecheck
+        def fnc(a: Optional[int] = None):
+            pass
+
+        self.assertIsNone(fnc(1))
+        self.assertIsNone(fnc())
+
+    def test_union(self):
+        @typecheck
+        def fnc(a: Union[int, float] = None):
+            pass
+
+        self.assertIsNone(fnc(1))
+        self.assertIsNone(fnc(1.1))
+
 
 class test_typecheck_exceptions(unittest.TestCase):
     def test_missing_args(self):
@@ -95,6 +112,14 @@ class test_typecheck_exceptions(unittest.TestCase):
     def test_missing_kwonlyargs(self):
         @typecheck
         def fnc(a: int, *args, b: float):
+            pass
+
+        with self.assertRaises(TypeCheckError):
+            fnc(1)
+
+    def test_wrong_optional_type(self):
+        @typecheck
+        def fnc(a: Optional[str] = None):
             pass
 
         with self.assertRaises(TypeCheckError):

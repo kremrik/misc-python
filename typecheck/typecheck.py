@@ -1,7 +1,13 @@
 from dataclasses import dataclass, field
 from functools import lru_cache, wraps
 from inspect import getfullargspec, FullArgSpec
-from typing import Any, Callable, Optional
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Union,
+    _GenericAlias,
+)
 from warnings import warn
 
 
@@ -111,7 +117,15 @@ def check_params(values: dict, typehints: dict) -> None:
 
 
 def _check_params(value: Any, typehint) -> bool:
-    if not isinstance(typehint, type):
+    if isinstance(typehint, _GenericAlias):
+        if typehint.__dict__["__origin__"] != Union:
+            msg = f"Type check for {typehint} is not yet supported, ignoring"
+            warn(msg)
+            return True
+        else:
+            typehint = typehint.__dict__["__args__"]
+
+    elif not isinstance(typehint, type):
         msg = f"Type check for {typehint} is not yet supported, ignoring"
         warn(msg)
         return True
