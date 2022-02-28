@@ -9,7 +9,7 @@ from typecheck.typecheck import (
 )
 
 import unittest
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 
 class test_typecheck(unittest.TestCase):
@@ -99,6 +99,21 @@ class test_typecheck(unittest.TestCase):
         self.assertIsNone(fnc(1))
         self.assertIsNone(fnc(1.1))
 
+    def test_generic_list(self):
+        @typecheck
+        def fnc(a: list):
+            pass
+
+        self.assertIsNone(fnc([1, 2]))
+        self.assertIsNone(fnc(["a", "b"]))
+
+    def test_hint_list(self):
+        @typecheck
+        def fnc(a: List[int]):
+            pass
+
+        self.assertIsNone(fnc([1, 2]))
+
 
 class test_typecheck_exceptions(unittest.TestCase):
     def test_missing_args(self):
@@ -124,6 +139,14 @@ class test_typecheck_exceptions(unittest.TestCase):
 
         with self.assertRaises(TypeCheckError):
             fnc(1)
+
+    def test_wrong_list_element(self):
+        @typecheck
+        def fnc(a: List[str] = None):
+            pass
+
+        with self.assertRaises(TypeCheckError):
+            fnc(["a", "b", 3])
 
 
 # implementation tests below

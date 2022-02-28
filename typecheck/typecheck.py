@@ -5,6 +5,7 @@ from typing import (
     Any,
     Callable,
     Optional,
+    TypeVar,
     Union,
     _GenericAlias,
 )
@@ -118,12 +119,27 @@ def check_params(values: dict, typehints: dict) -> None:
 
 def _check_params(value: Any, typehint) -> bool:
     if isinstance(typehint, _GenericAlias):
-        if typehint.__dict__["__origin__"] != Union:
+        if typehint.__dict__["__origin__"] == Union:
+            typehint = typehint.__dict__["__args__"]
+
+        elif typehint.__dict__["__origin__"] == list:
+            inner = typehint.__dict__["__args__"][0]
+            if isinstance(inner, TypeVar):
+                msg = f"Type check for {typehint} is not yet supported, ignoring"
+                warn(msg)
+                return True
+            else:
+                typehint = inner
+                for arg in value:
+                    res = isinstance(arg, typehint)
+                    if not res:
+                        return res
+                return True
+
+        else:
             msg = f"Type check for {typehint} is not yet supported, ignoring"
             warn(msg)
             return True
-        else:
-            typehint = typehint.__dict__["__args__"]
 
     elif not isinstance(typehint, type):
         msg = f"Type check for {typehint} is not yet supported, ignoring"
